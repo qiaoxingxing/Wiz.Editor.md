@@ -2,7 +2,56 @@ var modified = false;
 var objApp = window.external;
 var wizEditor;
 var docTitle = "";
+  /**
+     * //qxx
+     * @param {输入字符串}} source 
+     * @param {是否是增加级别: true提升级别, false:降低级别} isAddLevel 
+     */
+    var changeHeaderLevelForString = function (source, isAddLevel) {
+        var lines = source.split("\n");
+        var num = 0;
+        var newLines = []
 
+        var parseLine = function (line, isAddLevel) {
+            if (isAddLevel) {
+                return line.replace("# ", "## "); //note: replace只会替换一次
+            } else {
+                return line.replace("## ", "# ");
+            }
+        }
+
+        //note: for...in 被废弃了, 用for...of
+        for (var line of lines) {
+            var arr = line.match(/^#+ /g); //#号开头,空格结尾
+
+            if (arr) {
+                if (arr[0] === "# " && !isAddLevel) {
+                    //最高级别是1级; 
+                    console.info("最高级别是1级; ")
+                    return null;
+                }
+                line = parseLine(line, isAddLevel);
+            }
+            newLines.push(line);
+        }
+        var newSource = newLines.join("\n");
+        return newSource;
+    }
+
+    function changeHeaderLevel(cm,isAddLevel) {
+        var cursor = cm.getCursor();
+
+        if (!cm.somethingSelected()) {
+            //如果没有选择, 就选中当前行;
+            cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line + 1, ch: 0 });
+        }
+        var selection = cm.getSelection();
+
+        var newSource = changeHeaderLevelForString(selection, isAddLevel);
+        if (newSource != null) {
+            cm.replaceSelection(newSource, "around"); //around表示选中新选区
+        }
+    }
 $(function() {
     var objDatabase = null;
     var objDocument = null;
@@ -28,6 +77,7 @@ $(function() {
     ////////////////////////////////////////////////
     // 配置编辑器功能
     wizEditor = editormd("test-editormd", {
+        showTrailingSpace: false, //qxx: 不高亮显示行位空格(红色波浪线)
         theme           : optionSettings.EditToolbarTheme,        // 工具栏区域主题样式，见editormd.themes定义，夜间模式dark
         editorTheme     : optionSettings.EditEditorTheme,         // 编辑器区域主题样式，见editormd.editorThemes定义，夜间模式pastel-on-dark
         previewTheme    : optionSettings.EditPreviewTheme,        // 预览区区域主题样式，见editormd.previewThemes定义，夜间模式dark
@@ -109,6 +159,14 @@ $(function() {
                     // 可能按了保存快捷键，记录
                     wantSaveKey = true;
                     wantSaveTime = new Date();
+                },
+                "Shift-Ctrl-.": function (cm) {
+                    var isAddLevel = true;
+                    changeHeaderLevel.call(this,cm, isAddLevel);
+                },
+                "Shift-Ctrl-,": function (cm) {
+                    var isAddLevel = false;
+                    changeHeaderLevel.call(this,cm, isAddLevel);
                 }
             };
             this.addKeyMap(keyMap);
