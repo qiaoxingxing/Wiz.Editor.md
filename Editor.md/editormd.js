@@ -732,7 +732,7 @@
                 mode                      : settings.mode,
                 theme                     : settings.editorTheme,
                 tabSize                   : settings.tabSize,
-                dragDrop                  : false,
+                dragDrop                  : true,
                 autofocus                 : settings.autoFocus,
                 autoCloseTags             : settings.autoCloseTags,
                 readOnly                  : (settings.readOnly) ? "nocursor" : false,
