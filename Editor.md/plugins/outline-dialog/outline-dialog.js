@@ -49,7 +49,7 @@
                     width      : 330,
                     height     : 500,
                     mask       : false,
-                    drag       : false,
+                    drag       : true,
                     closed     : false,
                     content    : dialogContent,
                     lockScreen : false,

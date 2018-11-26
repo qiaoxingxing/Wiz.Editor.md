@@ -2,57 +2,57 @@ var modified = false;
 var objApp = window.external;
 var wizEditor;
 var docTitle = "";
-  /**
-     * //qxx
-     * @param {输入字符串}} source 
-     * @param {是否是增加级别: true提升级别, false:降低级别} isAddLevel 
-     */
-    var changeHeaderLevelForString = function (source, isAddLevel) {
-        var lines = source.split("\n");
-        var num = 0;
-        var newLines = []
+/**
+   * //qxx
+   * @param {输入字符串}} source 
+   * @param {是否是增加级别: true提升级别, false:降低级别} isAddLevel 
+   */
+var changeHeaderLevelForString = function (source, isAddLevel) {
+    var lines = source.split("\n");
+    var num = 0;
+    var newLines = []
 
-        var parseLine = function (line, isAddLevel) {
-            if (isAddLevel) {
-                return line.replace("# ", "## "); //note: replace只会替换一次
-            } else {
-                return line.replace("## ", "# ");
-            }
-        }
-
-        //note: for...in 被废弃了, 用for...of
-        for (var line of lines) {
-            var arr = line.match(/^#+ /g); //#号开头,空格结尾
-
-            if (arr) {
-                if (arr[0] === "# " && !isAddLevel) {
-                    //最高级别是1级; 
-                    console.info("最高级别是1级; ")
-                    return null;
-                }
-                line = parseLine(line, isAddLevel);
-            }
-            newLines.push(line);
-        }
-        var newSource = newLines.join("\n");
-        return newSource;
-    }
-
-    function changeHeaderLevel(cm,isAddLevel) {
-        var cursor = cm.getCursor();
-
-        if (!cm.somethingSelected()) {
-            //如果没有选择, 就选中当前行;
-            cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line + 1, ch: 0 });
-        }
-        var selection = cm.getSelection();
-
-        var newSource = changeHeaderLevelForString(selection, isAddLevel);
-        if (newSource != null) {
-            cm.replaceSelection(newSource, "around"); //around表示选中新选区
+    var parseLine = function (line, isAddLevel) {
+        if (isAddLevel) {
+            return line.replace("# ", "## "); //note: replace只会替换一次
+        } else {
+            return line.replace("## ", "# ");
         }
     }
-$(function() {
+
+    //note: for...in 被废弃了, 用for...of
+    for (var line of lines) {
+        var arr = line.match(/^#+ /g); //#号开头,空格结尾
+
+        if (arr) {
+            if (arr[0] === "# " && !isAddLevel) {
+                //最高级别是1级; 
+                console.info("最高级别是1级; ")
+                return null;
+            }
+            line = parseLine(line, isAddLevel);
+        }
+        newLines.push(line);
+    }
+    var newSource = newLines.join("\n");
+    return newSource;
+}
+
+function changeHeaderLevel(cm, isAddLevel) {
+    var cursor = cm.getCursor();
+
+    if (!cm.somethingSelected()) {
+        //如果没有选择, 就选中当前行;
+        cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line + 1, ch: 0 });
+    }
+    var selection = cm.getSelection();
+
+    var newSource = changeHeaderLevelForString(selection, isAddLevel);
+    if (newSource != null) {
+        cm.replaceSelection(newSource, "around"); //around表示选中新选区
+    }
+}
+$(function () {
     var objDatabase = null;
     var objDocument = null;
     var objCommon = getObjCommon();
@@ -78,102 +78,110 @@ $(function() {
     // 配置编辑器功能
     wizEditor = editormd("test-editormd", {
         showTrailingSpace: false, //qxx: 不高亮显示行位空格(红色波浪线)
-        theme           : optionSettings.EditToolbarTheme,        // 工具栏区域主题样式，见editormd.themes定义，夜间模式dark
-        editorTheme     : optionSettings.EditEditorTheme,         // 编辑器区域主题样式，见editormd.editorThemes定义，夜间模式pastel-on-dark
-        previewTheme    : optionSettings.EditPreviewTheme,        // 预览区区域主题样式，见editormd.previewThemes定义，夜间模式dark
-        value           : code,
-        path            : pluginFullPath + "Editor.md/lib/",
-        htmlDecode      : "style,script,iframe",  // 开启HTML标签解析，为了安全性，默认不开启
-        codeFold        : true,              // 代码折叠，默认关闭
-        tex             : true,              // 开启科学公式TeX语言支持，默认关闭
-        flowChart       : true,              // 开启流程图支持，默认关闭
-        sequenceDiagram : true,              // 开启时序/序列图支持，默认关闭
-        toc             : true,              // [TOC]自动生成目录，默认开启
-        tocm            : false,             // [TOCM]自动生成下拉菜单的目录，默认关闭
-        tocTitle        : "",                // 下拉菜单的目录的标题
-        tocDropdown     : false,             // [TOC]自动生成下拉菜单的目录，默认关闭
-        emoji           : optionSettings.EmojiSupport == "1" ? true : false,              // Emoji表情，默认关闭
-        taskList        : true,              // Task lists，默认关闭
-        disabledKeyMaps : [
+        theme: optionSettings.EditToolbarTheme,        // 工具栏区域主题样式，见editormd.themes定义，夜间模式dark
+        editorTheme: optionSettings.EditEditorTheme,         // 编辑器区域主题样式，见editormd.editorThemes定义，夜间模式pastel-on-dark
+        previewTheme: optionSettings.EditPreviewTheme,        // 预览区区域主题样式，见editormd.previewThemes定义，夜间模式dark
+        value: code,
+        path: pluginFullPath + "Editor.md/lib/",
+        htmlDecode: "style,script,iframe",  // 开启HTML标签解析，为了安全性，默认不开启
+        codeFold: true,              // 代码折叠，默认关闭
+        tex: true,              // 开启科学公式TeX语言支持，默认关闭
+        flowChart: true,              // 开启流程图支持，默认关闭
+        sequenceDiagram: true,              // 开启时序/序列图支持，默认关闭
+        toc: true,              // [TOC]自动生成目录，默认开启
+        tocm: false,             // [TOCM]自动生成下拉菜单的目录，默认关闭
+        tocTitle: "",                // 下拉菜单的目录的标题
+        tocDropdown: false,             // [TOC]自动生成下拉菜单的目录，默认关闭
+        emoji: optionSettings.EmojiSupport == "1" ? true : false,              // Emoji表情，默认关闭
+        taskList: true,              // Task lists，默认关闭
+        disabledKeyMaps: [
             "F9", "F10", "F11"               // 禁用切换全屏状态，因为为知已经支持
         ],
-        keymapMode      : optionSettings.KeymapMode,              // 键盘映射模式
-        toolbarIcons : function() {
+        keymapMode: optionSettings.KeymapMode,              // 键盘映射模式
+        toolbarIcons: function () {
             return getEditToolbarButton(optionSettings.EditToolbarButton);
         },
-        toolbarIconsClass : {
-            saveIcon : "fa-floppy-o",  // 指定一个FontAawsome的图标类
-            captureIcon : "fa-scissors",
-            plainPasteIcon : "fa-clipboard",
-            optionsIcon : "fa-gear",
-            outlineIcon : "fa-list",
-            counterIcon : "fa-th-large",
+        toolbarIconsClass: {
+            saveIcon: "fa-floppy-o",  // 指定一个FontAawsome的图标类
+            captureIcon: "fa-scissors",
+            plainPasteIcon: "fa-clipboard",
+            optionsIcon: "fa-gear",
+            outlineIcon: "fa-list",
+            counterIcon: "fa-th-large",
         },
-        toolbarHandlers : {
-            saveIcon : function() {
+        toolbarHandlers: {
+            saveIcon: function () {
                 saveDocument();
             },
-            captureIcon : function() {
+            captureIcon: function () {
                 captureScreenImage();
             },
-            plainPasteIcon : function() {
+            plainPasteIcon: function () {
                 plainPasteMode = !plainPasteMode;
                 showPlainPasteMode();
             },
-            optionsIcon : function() {
+            optionsIcon: function () {
                 this.executePlugin("optionsDialog", "options-dialog/options-dialog");
             },
-            outlineIcon : function() {
+            outlineIcon: function () {
                 this.executePlugin("outlineDialog", "outline-dialog/outline-dialog");
             },
-            counterIcon : function() {
+            counterIcon: function () {
                 this.executePlugin("counterDialog", "counter-dialog/counter-dialog");
             },
         },
-        lang : {
-            description : "为知笔记Markdown编辑器，基于 Editor.md 构建。",
-            toolbar : {
-                saveIcon : "保存 (Ctrl+S)",
-                captureIcon : "截取屏幕",
-                plainPasteIcon : "纯文本粘贴模式",
-                optionsIcon : "选项",
-                outlineIcon : "内容目录",
-                counterIcon : "文章信息",
+        lang: {
+            description: "为知笔记Markdown编辑器，基于 Editor.md 构建。",
+            toolbar: {
+                saveIcon: "保存 (Ctrl+S)",
+                captureIcon: "截取屏幕",
+                plainPasteIcon: "纯文本粘贴模式",
+                optionsIcon: "选项",
+                outlineIcon: "内容目录",
+                counterIcon: "文章信息",
             }
         },
-        onload : function() {
+        onload: function () {
+
             var keyMap = {
-                "Ctrl-F9": function(cm) {
+                "Ctrl-F9": function (cm) {
                     $.proxy(wizEditor.toolbarHandlers["watch"], wizEditor)();
                 },
-                "Ctrl-F10": function(cm) {
+                "Ctrl-F10": function (cm) {
                     $.proxy(wizEditor.toolbarHandlers["preview"], wizEditor)();
                 },
-                "F1": function(cm) {
+                "F1": function (cm) {
                     wizEditor.cm.execCommand("defaultTab");
                 },
-                "Ctrl-Alt-F": function(cm) {
+                "Ctrl-Alt-F": function (cm) {
                     wizEditor.cm.execCommand("find");
                 },
-                "Ctrl": function(cm) {
+                "Ctrl": function (cm) {
                     // 可能按了保存快捷键，记录
                     wantSaveKey = true;
                     wantSaveTime = new Date();
                 },
                 "Shift-Ctrl-.": function (cm) {
                     var isAddLevel = true;
-                    changeHeaderLevel.call(this,cm, isAddLevel);
+                    changeHeaderLevel.call(this, cm, isAddLevel);
                 },
                 "Shift-Ctrl-,": function (cm) {
                     var isAddLevel = false;
-                    changeHeaderLevel.call(this,cm, isAddLevel);
+                    changeHeaderLevel.call(this, cm, isAddLevel);
+                },
+                "Ctrl-Alt-T": function (cm) {
+                    //调用自定义的工具栏的按钮
+                    //参考上面的Ctrl-F9, 注意wizEditor.settings.toolbarHandlers;
+                    $.proxy(wizEditor.settings.toolbarHandlers["outlineIcon"], wizEditor)();
                 }
             };
             this.addKeyMap(keyMap);
             showPlainPasteMode();
+            //默认打开目录树
+            $.proxy(wizEditor.settings.toolbarHandlers["outlineIcon"], wizEditor)();
 
             // 监听文本变化事件
-            this.cm.on("change", function(_cm, changeObj) {
+            this.cm.on("change", function (_cm, changeObj) {
                 modified = true;
             });
 
@@ -199,37 +207,36 @@ $(function() {
             CodeMirror.commands.save = saveDocument;
 
             var isWebPage = false;
-            if (isWebPage)
-            {
-                $.get('Editor.md/examples/test.md', function(md){
+            if (isWebPage) {
+                $.get('Editor.md/examples/test.md', function (md) {
                     wizEditor.setMarkdown(md);
                     wizEditor.save();
                 });
             }
         },
-        onimageUploadButton : function() {
+        onimageUploadButton: function () {
             var filename = objCommon.SelectWindowsFile(true, "Image Files(*.png;*.jpg;*.gif;*.bmp)|*.png;*.jpg;*.gif;*.bmp|");
             return getSavedLocalImage(filename);
         },
-        onloadLocalFile : function(filename, fun) {
+        onloadLocalFile: function (filename, fun) {
             fun(objCommon.LoadTextFromFile(filename));
         },
-        onloadLocalJsonFile : function(filename, fun) {
+        onloadLocalJsonFile: function (filename, fun) {
             fun($.parseJSON(objCommon.LoadTextFromFile(filename)));
         },
-        onsaveOptions : function(optionsValue) {
+        onsaveOptions: function (optionsValue) {
             setOptionSettings(optionsValue);
         },
-        ongetOptions : function() {
+        ongetOptions: function () {
             return optionSettings;
         },
-        ongetObjDocument : function() {
+        ongetObjDocument: function () {
             return objDocument;
         },
-        ongetObjCommon : function() {
+        ongetObjCommon: function () {
             return objCommon;
         },
-        onclickHyperlink : function(hrefValue) {
+        onclickHyperlink: function (hrefValue) {
             return openOtherDocument(hrefValue) && openHrefInBrowser(hrefValue);
         }
     });
@@ -267,13 +274,13 @@ $(function() {
         var optionsValue = {
             // MarkdownStyle : getConfigValue("MarkdownStyle", "WizDefault"),
             // ReadTheme : getConfigValue("ReadTheme", "default"),
-            EditToolbarButton : getConfigValue("EditToolbarButton", "default"),
-            EditToolbarTheme : getConfigValue("EditToolbarTheme", "default"),
-            EditEditorTheme : getConfigValue("EditEditorTheme", "default"),
-            EditPreviewTheme : getConfigValue("EditPreviewTheme", "default"),
-            EmojiSupport : getConfigValue("EmojiSupport", "1"),
-            HrefInBrowser : getConfigValue("HrefInBrowser", "0"),
-            KeymapMode : getConfigValue("KeymapMode", "default"),
+            EditToolbarButton: getConfigValue("EditToolbarButton", "default"),
+            EditToolbarTheme: getConfigValue("EditToolbarTheme", "default"),
+            EditEditorTheme: getConfigValue("EditEditorTheme", "default"),
+            EditPreviewTheme: getConfigValue("EditPreviewTheme", "default"),
+            EmojiSupport: getConfigValue("EmojiSupport", "1"),
+            HrefInBrowser: getConfigValue("HrefInBrowser", "0"),
+            KeymapMode: getConfigValue("KeymapMode", "default"),
         };
         return optionsValue;
     };
@@ -389,7 +396,7 @@ $(function() {
                 "undo", "redo", "||",
                 "outlineIcon", "counterIcon", "optionsIcon", "help", "info"
             ];
-        } else{
+        } else {
             return [
                 "saveIcon", "|",
                 "undo", "redo", "|",
@@ -418,7 +425,7 @@ $(function() {
 
     ////////////////////////////////////////////////
     // 获得插件路径
-    function getPluginPath () {
+    function getPluginPath() {
         var pluginPath = "";
         try {
             pluginPath = objApp.GetPluginPathByScriptFileName("md_editor.js");
@@ -453,27 +460,28 @@ $(function() {
             var referencelinkRegEx = /reference-link/;
             wizEditor.insertValue(toMarkdown(htmlText, {
                 gfm: true,
-                converters:[
-                {
-                    filter: 'div',
-                    replacement: function(content) {
-                        return content + '\n';
-                    }
-                },
-                {
-                    filter: 'span',
-                    replacement: function(content) {
-                        return content;
-                    }
-                },
-                {
-                    filter: function (node) {
-                      return (node.nodeName === 'A' && referencelinkRegEx.test(node.className));
+                converters: [
+                    {
+                        filter: 'div',
+                        replacement: function (content) {
+                            return content + '\n';
+                        }
                     },
-                    replacement: function(content) {
-                        return "";
-                    }
-                }]})
+                    {
+                        filter: 'span',
+                        replacement: function (content) {
+                            return content;
+                        }
+                    },
+                    {
+                        filter: function (node) {
+                            return (node.nodeName === 'A' && referencelinkRegEx.test(node.className));
+                        },
+                        replacement: function (content) {
+                            return "";
+                        }
+                    }]
+            })
             );
             return true;
         }
@@ -485,7 +493,7 @@ $(function() {
     showPlainPasteMode = function () {
         if (plainPasteMode) {
             $(".fa-clipboard").addClass("menu-selected");
-        } else{
+        } else {
             $(".fa-clipboard").removeClass("menu-selected");
         };
     };
@@ -538,20 +546,20 @@ $(function() {
 
     ////////////////////////////////////////////////
     // 处理带图片内容
-    function dealImgDoc (doc) {
+    function dealImgDoc(doc) {
         var arrImgTags = "";
 
-        function dealImg (imgSrc) {
+        function dealImg(imgSrc) {
             var result = saveImageToLocal(imgSrc);
             arrImgTags += result[1];
             return result[0];
         }
 
         var imgReg = /(!\[[^\[]*?\]\()(.+?)(\s+['"][\s\S]*?['"])?(\))/g;
-        doc = doc.replace(imgReg, function(whole, a, b, c, d) {
+        doc = doc.replace(imgReg, function (whole, a, b, c, d) {
             if (c) {
                 return a + dealImg(b) + c + d;
-            } else{
+            } else {
                 return a + dealImg(b) + d;
             }
         });
@@ -635,7 +643,7 @@ $(function() {
 
     ////////////////////////////////////////////////
     // 设置表情文件的地址
-    function setEmojiFilePath () {
+    function setEmojiFilePath() {
         editormd.emoji.path = pluginFullPath + "Editor.md/emoji/emojis/";
         editormd.twemoji.path = pluginFullPath + "Editor.md/emoji/twemoji/36x36/";
     }
@@ -664,10 +672,10 @@ $(function() {
             document.body.innerHTML = content;
 
             var imgs = document.body.getElementsByTagName('img');
-            if(imgs.length){
+            if (imgs.length) {
                 for (var i = imgs.length - 1; i >= 0; i--) {
                     var pi = imgs[i];
-                    if(pi && pi.parentNode.getAttribute("name") != "markdownimage") {
+                    if (pi && pi.parentNode.getAttribute("name") != "markdownimage") {
                         var imgmd = document.createTextNode("![](" + pi.getAttribute("src") + ")");
                         $(pi).replaceWith(imgmd);
                     }
@@ -675,10 +683,10 @@ $(function() {
             }
 
             var links = document.body.getElementsByTagName('a');
-            if(links.length){
+            if (links.length) {
                 for (var i = links.length - 1; i >= 0; i--) {
                     var pi = links[i];
-                    if(pi && pi.getAttribute("href").indexOf("wiz://open_") != -1) {
+                    if (pi && pi.getAttribute("href").indexOf("wiz://open_") != -1) {
                         var linkmd = document.createTextNode("[" + pi.textContent + "](" + pi.getAttribute("href") + ")");
                         $(pi).replaceWith(linkmd);
                     }
@@ -760,8 +768,7 @@ $(function() {
                 var newAttachment = newDatabase.AttachmentFromGUID(guid);
                 objCommon.RunExe("explorer", newAttachment.FileName, false);
             }
-            else
-            {
+            else {
                 var newDocument = newDatabase.DocumentFromGUID(guid);
                 objApp.Window.ViewDocument(newDocument, true);
             }
