@@ -173,7 +173,9 @@ $(function () {
                     //调用自定义的工具栏的按钮
                     //参考上面的Ctrl-F9, 注意wizEditor.settings.toolbarHandlers;
                     $.proxy(wizEditor.settings.toolbarHandlers["outlineIcon"], wizEditor)();
-                }
+                },
+                "Shift-Tab": "indentLess"
+
             };
             this.addKeyMap(keyMap);
             showPlainPasteMode();
