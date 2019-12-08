@@ -95,6 +95,17 @@ let listHelper = {
      */
     isList: function (line) {
         return line && /^[\t ]*-[\t ]+/.test(line);
+    },
+    /**
+     * 获取列表的内容,返回数组,包含两个元素, 列表的前半部分和内容, 如:["  - ","内容"]
+     * @param {string} line
+     */
+    getListContentArray: function (line) {
+        let match = line.match(/^(\s*-\s*)(.*)/)
+        if (match) {
+            return [match[1], match[2]];
+        }
+        return null;
     }
 
 }
@@ -248,7 +259,7 @@ $(function () {
                     //参考上面的Ctrl-F9, 注意wizEditor.settings.toolbarHandlers;
                     $.proxy(wizEditor.settings.toolbarHandlers["outlineIcon"], wizEditor)();
                 },
-                "Ctrl-D":function(cm) {
+                "Ctrl-D": function (cm) {
                     console.debug("Ctrl-D");
                     $.proxy(wizEditor.settings.toolbarHandlers["smartListIcon"], wizEditor)();
                 },
@@ -305,7 +316,27 @@ $(function () {
 
                     // showConfirm(cm,currentLine)
                     // console.debug("test", `[${currentIndentLevel}]`);
-
+                },
+                "Ctrl-Enter": function (cm) {
+                    let cursor = cm.getCursor();
+                    let currentLine = cm.getLine(cursor.line);
+                    if(!listHelper.isList(currentLine)){
+                        return ;
+                    }
+                    let array = listHelper.getListContentArray(currentLine);
+                    if (!array || array.length<2 || !array[1]) {
+                        return;
+                    }
+                    let prefix = array[0];
+                    let content = array[1].trim();
+                    //如果内容已经有删除线了, 去除删除线; 
+                    if(content.startsWith("~~") && content.endsWith("~~")){
+                        content = content.substring(2,content.length-2);
+                    } else {
+                        content = `~~${content}~~`;
+                    }
+                    let  newLine = prefix+content;
+                    cm.getDoc().replaceRange(newLine,{line:cursor.line,ch:0}, {line:cursor.line,ch:currentLine.length})
                 }
 
             };
@@ -315,10 +346,8 @@ $(function () {
             // $.proxy(wizEditor.toolbarHandlers["watch"], wizEditor)();
 
             //qxx 默认打开目录树
-            $.proxy(wizEditor.settings.toolbarHandlers["outlineIcon"], wizEditor)();
-            this.cm.on("beforeCursorEnter", function () {
-                console.debug("beforeCursorEnter");
-            })
+            //浏览器打开有效, wiz里无效, 所以直接注释; 
+            // $.proxy(wizEditor.settings.toolbarHandlers["outlineIcon"], wizEditor)();
 
             // 监听文本变化事件
             this.cm.on("change", function (_cm, changeObj) {
