@@ -52,6 +52,53 @@ function changeHeaderLevel(cm, isAddLevel) {
         cm.replaceSelection(newSource, "around"); //around表示选中新选区
     }
 }
+//qxx 自定义函数
+function showMsg(cm, text) {
+    //qxx 复制自showConfirm
+    if (cm.openNotification) {
+        cm.openNotification('<span style="color: red">' + text + '</span>',
+            { bottom: true, duration: 3000 });
+    } else {
+        alert(text);
+    }
+}
+/**
+ * 返回空格的数目
+ * @param {cm} cm 
+ * @param {string} line 
+ */
+function getIndentLevel(cm, line) {
+    if (!line) {
+        return 0;
+    }
+    let match = line.match(/(^[\t ]+)- /);
+    if (match) {
+        let indentUnit = cm.getOption("indentUnit");
+        let space = new Array(indentUnit + 1).join(" ");
+        let allSpace = match[1].replace(/\t/g, space); //把制表符替换成空格;
+        return allSpace.length;
+    }
+    return 0;
+}
+
+//list的帮助方法
+let listHelper = {
+    /**
+     * 只有-和空格, 没有内容;
+     * @param {*} line 
+     */
+    isEmptyList: function (line) {
+        return line && /^[\t ]*- $/.test(line);
+    },
+    /**
+     * 是list
+     */
+    isList: function (line) {
+        return line && /^[\t ]*-[\t ]+/.test(line);
+    }
+
+}
+
 $(function () {
     var objDatabase = null;
     var objDocument = null;
@@ -74,9 +121,11 @@ $(function () {
     }
 
     setEmojiFilePath();
+
     ////////////////////////////////////////////////
     // 配置编辑器功能
     wizEditor = editormd("test-editormd", {
+        smartList: true,  //开启智能列表, 显示删除线图标
         showTrailingSpace: false, //qxx: 不高亮显示行位空格(红色波浪线)
         theme: optionSettings.EditToolbarTheme,        // 工具栏区域主题样式，见editormd.themes定义，夜间模式dark
         editorTheme: optionSettings.EditEditorTheme,         // 编辑器区域主题样式，见editormd.editorThemes定义，夜间模式pastel-on-dark
@@ -108,6 +157,8 @@ $(function () {
             optionsIcon: "fa-gear",
             outlineIcon: "fa-list",
             counterIcon: "fa-th-large",
+            smartListIcon: "smart-list-off",  //smartList=true时显示的图标, 和watch保持一致; 
+            unSmartListIcon: "smart-list",
         },
         toolbarHandlers: {
             saveIcon: function () {
@@ -129,6 +180,28 @@ $(function () {
             counterIcon: function () {
                 this.executePlugin("counterDialog", "counter-dialog/counter-dialog");
             },
+            smartListIcon: function () {
+                // 变量值smartList=true, 表示开启, 图标应当显示删除线; 
+                let smartList = !wizEditor.settings.smartList;
+                wizEditor.settings.smartList = smartList;
+                console.debug("current smartList", smartList);
+                let settings = this.settings;
+
+                let nowIcon;
+                let otherIcon;
+                if (smartList) {
+                    nowIcon = "unSmartListIcon";
+                    otherIcon = "smartListIcon";
+                } else {
+                    nowIcon = "smartListIcon";
+                    otherIcon = "unSmartListIcon";
+                }
+                let nowIconClass = settings.toolbarIconsClass[nowIcon];
+                let otherIconClass = settings.toolbarIconsClass[otherIcon];
+                let icon = this.toolbar.find("." + nowIconClass);
+                icon.parent().attr("title", settings.lang.toolbar[otherIcon]);
+                icon.removeClass(nowIconClass).addClass(otherIconClass);
+            },
         },
         lang: {
             description: "为知笔记Markdown编辑器，基于 Editor.md 构建。",
@@ -139,10 +212,11 @@ $(function () {
                 optionsIcon: "选项",
                 outlineIcon: "内容目录",
                 counterIcon: "文章信息",
+                smartListIcon: "关闭智能列表",
+                unSmartListIcon: "开启智能列表",
             }
         },
         onload: function () {
-
             var keyMap = {
                 "Ctrl-F9": function (cm) {
                     $.proxy(wizEditor.toolbarHandlers["watch"], wizEditor)();
@@ -174,13 +248,77 @@ $(function () {
                     //参考上面的Ctrl-F9, 注意wizEditor.settings.toolbarHandlers;
                     $.proxy(wizEditor.settings.toolbarHandlers["outlineIcon"], wizEditor)();
                 },
-                "Shift-Tab": "indentLess"
+                "Ctrl-D":function(cm) {
+                    console.debug("Ctrl-D");
+                    $.proxy(wizEditor.settings.toolbarHandlers["smartListIcon"], wizEditor)();
+                },
+                "Shift-Tab": "indentLess",
+                "Tab": function (cm) {
+                    cm.execCommand("indentMore");
+                },
+                "Backspace": function (cm) {
+                    console.debug("Backspace");
+                    // cursor = cm.getCursor();
+                    // cm.getDoc().markText({ line: cursor.line, ch: 0 }, { line: cursor.line, ch: cursor.ch }, {
+                    //     className: "qxx-red",
+                    //     atomic: true,
+                    //     selectRight: true,
+                    //     selectLeft: false,
+                    // })
+                    cm.execCommand("delCharBefore");
+                },
+                "Enter": function (cm) {
+                    let smartList = wizEditor.settings.smartList;
+                    if (!smartList) {
+                        //没有开启smartlist
+                        cm.execCommand("newlineAndIndent");
+                        return;
+                    }
+                    let cursor = cm.getCursor();
+                    let currentLine = cm.getLine(cursor.line);
+                    if (!listHelper.isList(currentLine)) {
+                        cm.execCommand("newlineAndIndent");
+                        return;
+                    }
+                    let nextLine = cm.getLine(cursor.line + 1);
+                    let currentIndentLevel = getIndentLevel(cm, currentLine);
+                    let nextIndentLevel = getIndentLevel(cm, nextLine);
+
+                    if (listHelper.isEmptyList(currentLine) && currentIndentLevel > nextIndentLevel) {
+                        //主题没有内容的时候回车减少缩进而不换行
+                        cm.execCommand("indentLess");
+                    } else {
+                        cm.execCommand("newlineAndIndent");
+                        //如果后面缩进大于本行, 增加缩进
+                        if (nextIndentLevel > currentIndentLevel) {
+                            cm.execCommand("indentMore");
+                        }
+                        //添加列表符合
+                        cm.replaceSelection("- ");
+                    }
+                    //让前面部分作为整体
+                    cursor = cm.getCursor();
+                    cm.getDoc().markText({ line: cursor.line, ch: 0 }, { line: cursor.line, ch: cursor.ch - 1 }, {
+                        className: "qxx-red",
+                        atomic: true
+                    })
+
+                    // showConfirm(cm,currentLine)
+                    // console.debug("test", `[${currentIndentLevel}]`);
+
+                }
 
             };
             this.addKeyMap(keyMap);
             showPlainPasteMode();
-            //默认打开目录树
+            //qxx
+            // $.proxy(wizEditor.toolbarHandlers["watch"], wizEditor)();
+
+            //qxx 默认打开目录树
             $.proxy(wizEditor.settings.toolbarHandlers["outlineIcon"], wizEditor)();
+            this.cm.on("beforeCursorEnter", function () {
+                console.debug("beforeCursorEnter");
+            })
 
             // 监听文本变化事件
             this.cm.on("change", function (_cm, changeObj) {
@@ -406,7 +544,7 @@ $(function () {
                 "h1", "h2", "h3", "|",
                 "list-ul", "list-ol", "hr", "|",
                 "plainPasteIcon", "link", "reference-link", "image", "captureIcon", "code", "preformatted-text", "code-block", "table", "datetime", "emoji", "html-entities", "pagebreak", "|",
-                "goto-line", "watch", "preview", "clear", "search", "||",
+                "goto-line", "watch", "preview", "search", "smartListIcon", "||",
                 "outlineIcon", "counterIcon", "optionsIcon", "help", "info"
             ];
         };

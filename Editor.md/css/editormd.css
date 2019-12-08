@@ -1659,6 +1659,15 @@
   content: "\f0c9";
 }
 
+.smart-list:before {
+  content: "L";
+}
+
+.smart-list-off:before {
+  content: "L";
+  text-decoration: line-through ;
+}
+
 .fa-list-ul:before {
   content: "\f0ca";
 }
@@ -4446,4 +4455,9 @@ hr.editormd-page-break {
 }
 .editormd-theme-dark .CodeMirror {
   border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+
+.qxx-red{
+  color:red
 }
