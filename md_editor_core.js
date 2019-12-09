@@ -4,7 +4,7 @@ var wizEditor;
 var docTitle = "";
 /**
    * //qxx
-   * @param {输入字符串}} source 
+   * @param {输入字符串} source 
    * @param {是否是增加级别: true提升级别, false:降低级别} isAddLevel 
    */
 var changeHeaderLevelForString = function (source, isAddLevel) {
@@ -54,7 +54,7 @@ function changeHeaderLevel(cm, isAddLevel) {
 }
 //qxx 自定义函数
 function showMsg(cm, text) {
-    //qxx 复制自showConfirm
+    //qxx 复制自vim的showConfirm
     if (cm.openNotification) {
         cm.openNotification('<span style="color: red">' + text + '</span>',
             { bottom: true, duration: 3000 });
@@ -67,34 +67,50 @@ function showMsg(cm, text) {
  * @param {cm} cm 
  * @param {string} line 
  */
-function getIndentLevel(cm, line) {
+function getIndentSpaceCount(cm, line) {
+    if(typeof cm !== "object"){
+        throw "parameter error";
+    }
     if (!line) {
         return 0;
     }
-    let match = line.match(/(^[\t ]+)- /);
+    let match = line.match(/(^\s*)/);
     if (match) {
         let indentUnit = cm.getOption("indentUnit");
         let space = new Array(indentUnit + 1).join(" ");
-        let allSpace = match[1].replace(/\t/g, space); //把制表符替换成空格;
+        //把制表符替换成空格;
+        let allSpace = match[1].replace(/\t/g, space);
         return allSpace.length;
     }
     return 0;
 }
 
+function convertTab2Space(cm, content) {
+    if (!content) {
+        return "";
+    }
+    let indentUnit = cm.getOption("indentUnit");
+    let space = new Array(indentUnit + 1).join(" ");
+    //把制表符替换成空格;
+    let newContent = content.replace(/\t/g, space);
+    return newContent;
+}
+
+
 //list的帮助方法
 let listHelper = {
     /**
-     * 只有-和空格, 没有内容;
+     * 只有空格和-, 没有内容;
      * @param {*} line 
      */
-    isEmptyList: function (line) {
-        return line && /^[\t ]*- $/.test(line);
+    isEmptyListItem: function (line) {
+        return line && /^\s*-\s*$/.test(line);
     },
     /**
-     * 是list
+     * 是list 
      */
-    isList: function (line) {
-        return line && /^[\t ]*-[\t ]+/.test(line);
+    isListItem: function (line) {
+        return line && /^\s*-\s+/.test(line);
     },
     /**
      * 获取列表的内容,返回数组,包含两个元素, 列表的前半部分和内容, 如:["  - ","内容"]
@@ -106,8 +122,16 @@ let listHelper = {
             return [match[1], match[2]];
         }
         return null;
-    }
-
+    },
+    /**
+     * 粘贴时判断剪贴板里的内容是list
+     * @param {多行字符串} content 
+     */
+    isContentList: function (content) {
+        //目前的逻辑: 首行是list就是list;
+        content = content || "";
+        return listHelper.isListItem(content.trim());
+    },
 }
 
 $(function () {
@@ -287,15 +311,16 @@ $(function () {
                     }
                     let cursor = cm.getCursor();
                     let currentLine = cm.getLine(cursor.line);
-                    if (!listHelper.isList(currentLine)) {
+                    if (!listHelper.isListItem(currentLine)) {
                         cm.execCommand("newlineAndIndent");
                         return;
                     }
                     let nextLine = cm.getLine(cursor.line + 1);
-                    let currentIndentLevel = getIndentLevel(cm, currentLine);
-                    let nextIndentLevel = getIndentLevel(cm, nextLine);
+                    let currentIndentLevel = getIndentSpaceCount(cm, currentLine);
+                    let nextIndentLevel = getIndentSpaceCount(cm, nextLine);
 
-                    if (listHelper.isEmptyList(currentLine) && currentIndentLevel > nextIndentLevel) {
+                    if (listHelper.isEmptyListItem(currentLine) && listHelper.isListItem(nextLine) &&
+                        currentIndentLevel > nextIndentLevel) {
                         //主题没有内容的时候回车减少缩进而不换行
                         cm.execCommand("indentLess");
                     } else {
@@ -307,12 +332,12 @@ $(function () {
                         //添加列表符合
                         cm.replaceSelection("- ");
                     }
-                    //让前面部分作为整体
-                    cursor = cm.getCursor();
-                    cm.getDoc().markText({ line: cursor.line, ch: 0 }, { line: cursor.line, ch: cursor.ch - 1 }, {
-                        className: "qxx-red",
-                        atomic: true
-                    })
+                    //让前面部分作为整体; 待定
+                    // cursor = cm.getCursor();
+                    // cm.getDoc().markText({ line: cursor.line, ch: 0 }, { line: cursor.line, ch: cursor.ch - 1 }, {
+                    //     className: "qxx-red",
+                    //     atomic: true
+                    // })
 
                     // showConfirm(cm,currentLine)
                     // console.debug("test", `[${currentIndentLevel}]`);
@@ -320,23 +345,29 @@ $(function () {
                 "Ctrl-Enter": function (cm) {
                     let cursor = cm.getCursor();
                     let currentLine = cm.getLine(cursor.line);
-                    if(!listHelper.isList(currentLine)){
-                        return ;
+                    if (!listHelper.isListItem(currentLine)) {
+                        return;
                     }
                     let array = listHelper.getListContentArray(currentLine);
-                    if (!array || array.length<2 || !array[1]) {
+                    if (!array || array.length < 2 || !array[1]) {
                         return;
                     }
                     let prefix = array[0];
                     let content = array[1].trim();
                     //如果内容已经有删除线了, 去除删除线; 
-                    if(content.startsWith("~~") && content.endsWith("~~")){
-                        content = content.substring(2,content.length-2);
+                    if (content.startsWith("~~") && content.endsWith("~~")) {
+                        content = content.substring(2, content.length - 2);
                     } else {
                         content = `~~${content}~~`;
                     }
-                    let  newLine = prefix+content;
-                    cm.getDoc().replaceRange(newLine,{line:cursor.line,ch:0}, {line:cursor.line,ch:currentLine.length})
+                    let newLine = prefix + content;
+                    cm.getDoc().replaceRange(newLine, { line: cursor.line, ch: 0 }, { line: cursor.line, ch: currentLine.length })
+                },
+                "Ctrl-E": function (cm) {
+                    //用于测试效果
+                    console.debug("test Ctrl-E");
+                    cm.execCommand("deleteLine");
+
                 }
 
             };
@@ -346,8 +377,116 @@ $(function () {
             // $.proxy(wizEditor.toolbarHandlers["watch"], wizEditor)();
 
             //qxx 默认打开目录树
-            //浏览器打开有效, wiz里无效, 所以直接注释; 
-            // $.proxy(wizEditor.settings.toolbarHandlers["outlineIcon"], wizEditor)();
+            $.proxy(wizEditor.settings.toolbarHandlers["outlineIcon"], wizEditor)();
+            this.cm.on("beforeSelectionChange", function (cm, obj) {
+                // obj: {ranges, origin, update})
+                // console.debug("beforeSelectionChange", JSON.stringify(obj));
+                const qxxSticky = "qxxSticky";
+                let range = obj.ranges[0];
+                let anchor = range.anchor;
+                let head = range.head;
+                // console.debug("json", JSON.stringify(anchor), JSON.stringify(head));
+                if (anchor.sticky == qxxSticky) {
+                    return;
+                }
+                if (anchor.ch == 0 && head.ch == 0) {
+                    //处理多选一行的情况; 
+                    //同时为零的情况: 粘贴之后选中; 
+                    return;
+                }
+                let anchorLine = cm.getLine(anchor.line);
+                if (!listHelper.isListItem(anchorLine)) {
+                    return;
+                }
+                if (head.line == anchor.line) {
+                    return;
+                } else if (head.line < anchor.line) {
+                    //向上复制时
+                    console.debug("beforeSelectionChange up");
+                    anchor.ch = cm.getLine(anchor.line).length + 1;
+                    //qxx 这种方式有问题, 会往下一直复制, 原因不明; 
+                    // anchor.sticky = qxxSticky;  //导致head无效;
+                    // anchor.ch = 0;
+                    // anchor.line = anchor.line + 1;
+                    head.ch = 0;
+                } else {
+                    //向下复制时
+                    console.debug("beforeSelectionChange down");
+                    anchor.ch = 0;
+                    head.ch = 0;
+                    // head.line = head.line + 1;
+                    //选择它的下级
+                    let anchorLine = cm.getLine(anchor.line);
+                    let anchorLineSpace = getIndentSpaceCount(cm, anchorLine);
+                    let nextLineNo = head.line + 1;
+                    while (true) {
+                        let nextLine = cm.getLine(nextLineNo);
+                        let nextLineSpace = getIndentSpaceCount(cm,nextLine);
+                        if (nextLineSpace > anchorLineSpace) {
+                            nextLineNo += 1;
+                        } else {
+                            head.line = nextLineNo;
+                            break;
+                        }
+                    }
+                }
+                obj.update([{
+                    anchor: anchor,
+                    head: head
+                }])
+            })
+
+            this.cm.on("paste", function (cm, e) {
+                console.debug("on paste 2");
+                var clipboardData = e.clipboardData || window.clipboardData;
+                if (!clipboardData) {
+                    return;
+                }
+                if ($.inArray("text/plain", clipboardData.types) == -1) {
+                    return;
+                }
+                let contentclipboard = clipboardData.getData("text/plain");
+                contentclipboard = convertTab2Space(cm, contentclipboard);
+                //判断内容是list;
+                let isContentList = listHelper.isContentList(contentclipboard);
+                if (!isContentList) {
+                    return;
+                }
+                let contentArray = contentclipboard.split("\n").filter(n => !!n.trim());
+                //如果当前行是空list
+                let cursor = cm.getCursor();
+                let line = cm.getLine(cursor.line);
+                let newContent = "";
+                if (listHelper.isEmptyListItem(line)) {
+                    let targetIndentLevel = getIndentSpaceCount(cm, line);
+                    //根据剪贴板的第一行判断缩进量;
+                    let nowIndentLevel = getIndentSpaceCount(cm, contentArray[0]);
+                    let diff = targetIndentLevel - nowIndentLevel;
+                    if (diff >= 0) {
+                        //增加缩进: 行首添加空格; 
+                        let space = new Array(diff + 1).join(" ");
+                        contentArray = contentArray.map(n => space + n);
+                    } else {
+                        //tab在上面已经被转为space
+                        diff = -1 * diff;
+                        contentArray = contentArray.map(n => {
+                            let spaceCount = getIndentSpaceCount(cm, n);
+                            let count = Math.min(diff, spaceCount);
+                            let line = n.substring(count);
+                            return line;
+                        });
+
+                    }
+                    newContent = contentArray.join("\n");
+                    newContent = newContent.trimEnd() + "\n";
+                    cm.execCommand("deleteLine");
+                    cm.replaceSelection(newContent, "around");  //替换内容并选中
+                    e.preventDefault();
+                } else {
+                    //todo 
+                }
+
+            })
 
             // 监听文本变化事件
             this.cm.on("change", function (_cm, changeObj) {
@@ -356,17 +495,16 @@ $(function () {
 
             // 监听粘贴事件
             this.cm.on("paste", function (_cm, e) {
-                var clipboardData = event.clipboardData || window.clipboardData;
+                console.debug("on paste");
+                var clipboardData = e.clipboardData || window.clipboardData;
                 if (clipboardData) {
                     if (clipboardData.types == "Files") {
                         clipboardToImage();
-                    }
-                    else if ($.inArray("text/html", clipboardData.types) != -1) {
+                    } else if ($.inArray("text/html", clipboardData.types) != -1) {
                         if (!plainPasteMode && clipboardHTMLToMd(clipboardData.getData("text/html"))) {
                             e.preventDefault();
                         }
-                    }
-                    else {
+                    } else {
                         //类型为"text/plain"，快捷键Ctrl+Shift+V
                     }
                 }
