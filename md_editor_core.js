@@ -270,6 +270,30 @@ $(function () {
                     wantSaveKey = true;
                     wantSaveTime = new Date();
                 },
+                "Ctrl-U": function (cm) {
+                    //从list-ul复制过来修改; 
+                    //切换当前行的list的状态; 
+                    var cursor = cm.getCursor();
+                    var selection = cm.getSelection();
+                    if (!selection) {
+                        let line = cm.getLine(cursor.line);
+                        cm.getDoc().setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line, ch: line.length });
+
+                        if (!listHelper.isListItem(line)) {
+                            cm.replaceSelection("- " + line);
+                        } else {
+                            line = line.replace("- ", "");
+                            cm.getDoc().replaceSelection(line);
+                        }
+                    } else {
+                        var selectionText = selection.split("\n");
+
+                        for (var i = 0, len = selectionText.length; i < len; i++) {
+                            selectionText[i] = (selectionText[i] === "") ? "" : "- " + selectionText[i];
+                        }
+                        cm.replaceSelection(selectionText.join("\n"));
+                    }
+                },
                 "Shift-Ctrl-.": function (cm) {
                     var isAddLevel = true;
                     changeHeaderLevel.call(this, cm, isAddLevel);
