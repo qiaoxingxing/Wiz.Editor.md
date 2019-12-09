@@ -292,7 +292,7 @@ $(function () {
                     cm.execCommand("indentMore");
                 },
                 "Backspace": function (cm) {
-                    console.debug("Backspace");
+                    // console.debug("Backspace");
                     // cursor = cm.getCursor();
                     // cm.getDoc().markText({ line: cursor.line, ch: 0 }, { line: cursor.line, ch: cursor.ch }, {
                     //     className: "qxx-red",
