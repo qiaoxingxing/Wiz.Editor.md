@@ -68,7 +68,7 @@ function showMsg(cm, text) {
  * @param {string} line 
  */
 function getIndentSpaceCount(cm, line) {
-    if(typeof cm !== "object"){
+    if (typeof cm !== "object") {
         throw "parameter error";
     }
     if (!line) {
@@ -317,9 +317,11 @@ $(function () {
                     }
                     let nextLine = cm.getLine(cursor.line + 1);
                     let currentIndentLevel = getIndentSpaceCount(cm, currentLine);
-                    let nextIndentLevel = getIndentSpaceCount(cm, nextLine);
-
-                    if (listHelper.isEmptyListItem(currentLine) && listHelper.isListItem(nextLine) &&
+                    let nextIndentLevel = 0;  //nextLine可能不是listItem, 默认为0
+                    if (listHelper.isListItem(nextLine)) {
+                        nextIndentLevel = getIndentSpaceCount(cm, nextLine);
+                    }
+                    if (listHelper.isEmptyListItem(currentLine) &&
                         currentIndentLevel > nextIndentLevel) {
                         //主题没有内容的时候回车减少缩进而不换行
                         cm.execCommand("indentLess");
@@ -389,7 +391,7 @@ $(function () {
                 if (anchor.sticky == qxxSticky) {
                     return;
                 }
-                if (anchor.ch == 0 && head.ch == 0) {
+                if (head.ch == 0) {
                     //处理多选一行的情况; 
                     //同时为零的情况: 粘贴之后选中; 
                     return;
@@ -411,17 +413,19 @@ $(function () {
                     head.ch = 0;
                 } else {
                     //向下复制时
+                    //选择到head所在行的最后一个字符
+                    //不能选择到head下一行的第0个字符
                     console.debug("beforeSelectionChange down");
                     anchor.ch = 0;
+                    // head.ch = cm.getLine(head.line).length;
                     head.ch = 0;
-                    // head.line = head.line + 1;
                     //选择它的下级
                     let anchorLine = cm.getLine(anchor.line);
                     let anchorLineSpace = getIndentSpaceCount(cm, anchorLine);
                     let nextLineNo = head.line + 1;
                     while (true) {
                         let nextLine = cm.getLine(nextLineNo);
-                        let nextLineSpace = getIndentSpaceCount(cm,nextLine);
+                        let nextLineSpace = getIndentSpaceCount(cm, nextLine);
                         if (nextLineSpace > anchorLineSpace) {
                             nextLineNo += 1;
                         } else {
@@ -453,7 +457,7 @@ $(function () {
                     return;
                 }
                 let contentArray = contentclipboard.split("\n").filter(n => !!n.trim());
-                //如果当前行是空list
+                //如果当前行是空listItem
                 let cursor = cm.getCursor();
                 let line = cm.getLine(cursor.line);
                 let newContent = "";
