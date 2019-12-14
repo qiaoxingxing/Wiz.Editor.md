@@ -506,7 +506,7 @@ $(function () {
 
                     }
                     newContent = contentArray.join("\n");
-                    newContent = newContent.trimEnd() + "\n";
+                    newContent = newContent.trimRight() + "\n";
                     cm.execCommand("deleteLine");
                     cm.replaceSelection(newContent, "around");  //替换内容并选中
                     e.preventDefault();
