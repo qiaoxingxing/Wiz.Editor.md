@@ -333,30 +333,44 @@ $(function () {
                         cm.execCommand("newlineAndIndent");
                         return;
                     }
+                    //以下是开启了smartList
                     let cursor = cm.getCursor();
                     let currentLine = cm.getLine(cursor.line);
                     if (!listHelper.isListItem(currentLine)) {
                         cm.execCommand("newlineAndIndent");
                         return;
                     }
+                    //以下表示当前行是listitem
+                    //回车需要处理的集中情况: 
+                    //1. 下一行增加同级listitem
+                    //2. 下一行增加下级listitem
+                    //3. 本行减少缩进
+                    //4. 本行是"^- "时, 删除"- "
                     let nextLine = cm.getLine(cursor.line + 1);
                     let currentIndentLevel = getIndentSpaceCount(cm, currentLine);
                     let nextIndentLevel = 0;  //nextLine可能不是listItem, 默认为0
                     if (listHelper.isListItem(nextLine)) {
                         nextIndentLevel = getIndentSpaceCount(cm, nextLine);
                     }
-                    if (listHelper.isEmptyListItem(currentLine) &&
+                    if (currentLine === "- ") {
+                        //情况4
+                        cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line, ch: currentLine.length});
+                        cm.replaceSelection("")
+                    } else if (listHelper.isEmptyListItem(currentLine) &&
                         currentIndentLevel > nextIndentLevel) {
-                        //主题没有内容的时候回车减少缩进而不换行
+                        //当前主题时emptyList的时候, 且缩进量大于下一行
+                        //情况3:
                         cm.execCommand("indentLess");
                     } else {
+                        //情况1
                         cm.execCommand("newlineAndIndent");
-                        //如果后面缩进大于本行, 增加缩进
+                        //情况2: 当后面缩进量大于本行, 增加缩进, 相当于直接进入子级主题
                         if (nextIndentLevel > currentIndentLevel) {
                             cm.execCommand("indentMore");
                         }
-                        //添加列表符合
+                        //添加列表符号
                         cm.replaceSelection("- ");
+
                     }
                     //让前面部分作为整体; 待定
                     // cursor = cm.getCursor();
