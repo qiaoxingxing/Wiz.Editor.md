@@ -354,7 +354,7 @@ $(function () {
                     }
                     if (currentLine === "- ") {
                         //情况4
-                        cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line, ch: currentLine.length});
+                        cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line, ch: currentLine.length });
                         cm.replaceSelection("")
                     } else if (listHelper.isEmptyListItem(currentLine) &&
                         currentIndentLevel > nextIndentLevel) {
@@ -811,6 +811,21 @@ $(function () {
                 gfm: true,
                 converters: [
                     {
+                        filter: 'br',
+                        replacement: function (content, node) {
+                            //qxx: 解决粘贴幕布中间有空行的问题; 
+                            // <li>里的br不转换为换行; 
+                            //参考自to-markdown.js 502行左右
+                            var parent = node.parentNode;
+                            var isLi = /li/i.test(parent.nodeName)
+                            if (isLi) {
+                                return "";
+                            } else {
+                                return "\n";
+                            }
+                        }
+                    },
+                    {
                         filter: 'div',
                         replacement: function (content) {
                             return content + '\n';
@@ -884,7 +899,7 @@ $(function () {
                     }
                 } else {
                     saveDocument();
-                } 
+                }
             }
         }
         else {
